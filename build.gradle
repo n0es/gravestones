@@ -2,6 +2,7 @@ plugins {
     id 'eclipse'
     id 'idea'
     id 'net.minecraftforge.gradle' version '[6.0.16,6.2)'
+    id 'org.parchmentmc.librarian.forgegradle' version '1.+'
 }
 
 
@@ -69,11 +70,14 @@ minecraft {
             // "REGISTRYDUMP": For getting the contents of all registries.
             property 'forge.logging.markers', 'REGISTRIES'
 
-
             // Recommended logging level for the console
             // You can set various levels here.
             // Please read: https://stackoverflow.com/questions/2031163/when-to-use-the-different-log-levels
             property 'forge.logging.console.level', 'debug'
+
+            // Mixin properties to fix compatibility issues with mods like Curios
+            property 'mixin.env.remapRefMap', 'true'
+            property 'mixin.env.refMapRemappingFile', "${projectDir}/build/createSrgToMcp/output.srg"
 
             mods {
                 "${mod_id}" {
@@ -115,6 +119,27 @@ sourceSets.main.resources { srcDir 'src/generated/resources' }
 repositories {
     // Put repositories for dependencies here
     // ForgeGradle automatically adds the Forge maven and Maven Central for you
+    
+    // CurseForge Maven for mod dependencies
+    maven {
+        name = 'CurseForge'
+        url = 'https://cursemaven.com'
+        content {
+            includeGroup "curse.maven"
+        }
+    }
+
+    // Curios API official maven repository
+    maven {
+        name = "Illusive Soulworks maven"
+        url = "https://maven.theillusivec4.top/"
+    }
+
+    // Cloth Config maven repository
+    maven {
+        name = "Shedaniel"
+        url = "https://maven.shedaniel.me/"
+    }
 
     // If you have mod jar dependencies in ./libs, you can declare them as a repository like so.
     // See https://docs.gradle.org/current/userguide/declaring_repositories.html#sub:flat_dir_resolver
@@ -131,11 +156,35 @@ dependencies {
     // then special handling is done to allow a setup of a vanilla dependency without the use of an external repository.
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
 
+    // Cosmetic Armor Rewritten mod for testing integration
+    // IMPORTANT: Find a compatible version for MC 1.20.1 + Forge 47.4.1
+    // Visit https://www.curseforge.com/minecraft/mc-mods/cosmetic-armor-reworked/files
+    // Look for versions that support MC 1.20.1 and Forge 47.x, then replace the file ID below
+    
+    // COMMENTED OUT FOR STANDALONE TESTING
+    // Add as compile-time dependency for API access
+    // compileOnly fg.deobf("curse.maven:cosmeticarmorreworked-237307:4600191")
+    // Keep as runtime dependency for testing
+    // runtimeOnly fg.deobf("curse.maven:cosmeticarmorreworked-237307:4600191")
+
+    // Curios API for curios integration
+    // Using official Curios API maven repository
+    // COMMENTED OUT FOR STANDALONE TESTING
+    // Compile against only the API artifact
+    // compileOnly(fg.deobf("top.theillusivec4.curios:curios-forge:${curios_version}+${minecraft_version}:api"))
+    // Use the full Curios API jar at runtime
+    // runtimeOnly(fg.deobf("top.theillusivec4.curios:curios-forge:${curios_version}+${minecraft_version}"))
+
+    // Cloth Config for configuration GUI
+    // COMMENTED OUT FOR STANDALONE TESTING
+    // implementation fg.deobf("me.shedaniel.cloth:cloth-config-forge:11.1.118")
+
     // Example mod dependency with JEI - using fg.deobf() ensures the dependency is remapped to your development mappings
     // The JEI API is declared for compile time use, while the full JEI artifact is used at runtime
     // compileOnly fg.deobf("mezz.jei:jei-${mc_version}-common-api:${jei_version}")
     // compileOnly fg.deobf("mezz.jei:jei-${mc_version}-forge-api:${jei_version}")
     // runtimeOnly fg.deobf("mezz.jei:jei-${mc_version}-forge:${jei_version}")
+
 
     // Example mod dependency using a mod jar from ./libs with a flat dir repository
     // This maps to ./libs/coolmod-${mc_version}-${coolmod_version}.jar
@@ -157,7 +206,8 @@ tasks.named('processResources', ProcessResources).configure {
                              forge_version       : forge_version, forge_version_range: forge_version_range,
                              loader_version_range: loader_version_range,
                              mod_id              : mod_id, mod_name: mod_name, mod_license: mod_license, mod_version: mod_version,
-                             mod_authors         : mod_authors, mod_description: mod_description,]
+                             mod_authors         : mod_authors, mod_description: mod_description,
+                             curios_version      : curios_version]
 
     inputs.properties replaceProperties
 
