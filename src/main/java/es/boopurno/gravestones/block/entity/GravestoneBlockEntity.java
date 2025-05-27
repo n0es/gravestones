@@ -178,7 +178,6 @@ public class GravestoneBlockEntity extends BlockEntity implements MenuProvider {
         List<ItemStack> allItems = new ArrayList<>();
         List<Object> itemSources = new ArrayList<>();
 
-        // Collect all items from player inventory
         for (int i = 9; i < 36; i++) {
             ItemStack stack = inventory.items.get(i);
             if (!stack.isEmpty()) {
@@ -212,17 +211,14 @@ public class GravestoneBlockEntity extends BlockEntity implements MenuProvider {
             addCosmeticArmorItems(player, allItems, itemSources);
         }
 
-        // First, handle Curse of Vanishing items
         if (GravestoneConfig.RESPECT_CURSE_OF_VANISHING.get()) {
             handleCurseOfVanishing(allItems, itemSources, player);
         }
 
-        // Apply random curses to enchanted items
         if (GravestoneConfig.ENABLE_CURSE_APPLICATION.get()) {
             applyCursesToItems(allItems, random);
         }
 
-        // Calculate number of slots to affect based on percentage of occupied slots
         int minSlotsPercent = GravestoneConfig.MIN_SLOTS_LOST_PERCENT.get();
         int maxSlotsPercent = GravestoneConfig.MAX_SLOTS_LOST_PERCENT.get();
         int slotPercentage = minSlotsPercent + random.nextInt(Math.max(1, maxSlotsPercent - minSlotsPercent + 1));
@@ -365,7 +361,6 @@ public class GravestoneBlockEntity extends BlockEntity implements MenuProvider {
             return 0;
         }
 
-        // Use configured min/max durability loss percentages
         int minPercent = GravestoneConfig.MIN_DURABILITY_LOSS_PERCENT.get();
         int maxPercent = GravestoneConfig.MAX_DURABILITY_LOSS_PERCENT.get();
         double damageRatio = (minPercent + random.nextInt(Math.max(1, maxPercent - minPercent + 1))) / 100.0;
@@ -392,8 +387,6 @@ public class GravestoneBlockEntity extends BlockEntity implements MenuProvider {
 
     private int applyQuantityLoss(ItemStack itemStack, Random random) {
         int stackSize = itemStack.getCount();
-
-        // Use configured min/max stack loss percentages
         int minPercent = GravestoneConfig.MIN_STACK_LOSS_PERCENT.get();
         int maxPercent = GravestoneConfig.MAX_STACK_LOSS_PERCENT.get();
         double lossRatio = (minPercent + random.nextInt(Math.max(1, maxPercent - minPercent + 1))) / 100.0;
@@ -458,12 +451,11 @@ public class GravestoneBlockEntity extends BlockEntity implements MenuProvider {
 
                     if (!itemStack.isEmpty()) {
                         curiosItems.add(itemStack);
-                        curiosItemHandlers.add(new Object[] { itemHandler, i }); // Store handler and slot
+                        curiosItemHandlers.add(new Object[] { itemHandler, i });
                     }
                 }
             }
 
-            // Use the same min/max slot approach as main inventory
             int minSlotsPercent = GravestoneConfig.MIN_SLOTS_LOST_PERCENT.get();
             int maxSlotsPercent = GravestoneConfig.MAX_SLOTS_LOST_PERCENT.get();
             int slotPercentage = minSlotsPercent + random.nextInt(Math.max(1, maxSlotsPercent - minSlotsPercent + 1));
@@ -647,17 +639,14 @@ public class GravestoneBlockEntity extends BlockEntity implements MenuProvider {
         }
 
         for (ItemStack stack : allItems) {
-            // Only apply curses to enchanted items
             if (stack.getEnchantmentTags().isEmpty()) {
                 continue;
             }
 
-            // Roll for curse application
             if (random.nextInt(100) >= curseChance) {
                 continue;
             }
 
-            // Select a random curse from available list
             String selectedCurse = availableCurses.get(random.nextInt(availableCurses.size()));
             ResourceLocation curseLocation = ResourceLocation.tryParse(selectedCurse);
 
@@ -666,19 +655,16 @@ public class GravestoneBlockEntity extends BlockEntity implements MenuProvider {
                 continue;
             }
 
-            // Check if enchantment exists in registry
             Enchantment enchantment = BuiltInRegistries.ENCHANTMENT.get(curseLocation);
             if (enchantment == null) {
                 Gravestones.LOGGER.warn("Enchantment not found in registry: {}", selectedCurse);
                 continue;
             }
 
-            // Check if the item already has this curse
             if (EnchantmentHelper.getItemEnchantmentLevel(enchantment, stack) > 0) {
                 continue;
             }
 
-            // Apply the curse at level 1
             stack.enchant(enchantment, 1);
 
             Gravestones.LOGGER.debug("Applied curse {} to item {} for player on death",

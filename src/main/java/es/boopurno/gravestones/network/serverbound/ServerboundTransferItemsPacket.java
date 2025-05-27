@@ -28,8 +28,8 @@ public class ServerboundTransferItemsPacket {
         context.enqueueWork(() -> {
             ServerPlayer player = context.getSender();
             if (player != null && player.containerMenu instanceof GravestoneMenu gravestoneMenu) {
-                // Check if the BE from the packet matches the one in the menu for security
-                if (gravestoneMenu.getBlockEntity() != null && gravestoneMenu.getBlockEntity().getBlockPos().equals(this.blockPos)) {
+                if (gravestoneMenu.getBlockEntity() != null
+                        && gravestoneMenu.getBlockEntity().getBlockPos().equals(this.blockPos)) {
                     gravestoneMenu.handleTransferItems();
                 }
             }

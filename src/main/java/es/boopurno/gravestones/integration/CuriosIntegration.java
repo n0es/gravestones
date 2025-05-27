@@ -11,10 +11,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-/**
- * Integration with Curios mod for storing and restoring curio items
- * Uses reflection to avoid hard dependencies
- */
 public class CuriosIntegration {
 
     private static Class<?> curiosApiClass;
@@ -22,16 +18,12 @@ public class CuriosIntegration {
     private static Method resolveMethod;
     private static boolean initialized = false;
 
-    /**
-     * Initialize Curios integration using reflection
-     */
     public static void init() {
         try {
             curiosApiClass = Class.forName("top.theillusivec4.curios.api.CuriosApi");
             getCuriosInventoryMethod = curiosApiClass.getMethod("getCuriosInventory",
                     net.minecraft.world.entity.LivingEntity.class);
 
-            // Get the LazyOptional class and resolve method
             Class<?> lazyOptionalClass = Class.forName("net.minecraftforge.common.util.LazyOptional");
             resolveMethod = lazyOptionalClass.getMethod("resolve");
 
@@ -43,19 +35,10 @@ public class CuriosIntegration {
         }
     }
 
-    /**
-     * Check if Curios integration is initialized
-     */
     public static boolean isInitialized() {
         return initialized;
     }
 
-    /**
-     * Get all curios items from a player as individual ItemStacks
-     * 
-     * @param player The player to get curios from
-     * @return List of curios ItemStacks
-     */
     public static List<ItemStack> getCuriosItems(Player player) {
         List<ItemStack> curiosItems = new ArrayList<>();
 
@@ -64,7 +47,6 @@ public class CuriosIntegration {
         }
 
         try {
-            // Get curios inventory using reflection
             Object lazyOptional = getCuriosInventoryMethod.invoke(null, player);
             Optional<?> curiosHandler = (Optional<?>) resolveMethod.invoke(lazyOptional);
 
@@ -74,23 +56,18 @@ public class CuriosIntegration {
 
             Object curios = curiosHandler.get();
 
-            // Use reflection to get curios map
             Method getCuriosMethod = curios.getClass().getMethod("getCurios");
             Map<String, Object> curiosMap = (Map<String, Object>) getCuriosMethod.invoke(curios);
 
-            // Iterate through all curio slot types
             for (Map.Entry<String, Object> entry : curiosMap.entrySet()) {
                 Object stacksHandler = entry.getValue();
 
-                // Get stacks from handler
                 Method getStacksMethod = stacksHandler.getClass().getMethod("getStacks");
                 Object stackHandler = getStacksMethod.invoke(stacksHandler);
 
-                // Get slot count
                 Method getSlotsMethod = stackHandler.getClass().getMethod("getSlots");
                 int slots = (Integer) getSlotsMethod.invoke(stackHandler);
 
-                // Get items from slots
                 Method getStackInSlotMethod = stackHandler.getClass().getMethod("getStackInSlot", int.class);
                 for (int i = 0; i < slots; i++) {
                     ItemStack stack = (ItemStack) getStackInSlotMethod.invoke(stackHandler, i);
@@ -108,14 +85,6 @@ public class CuriosIntegration {
         return curiosItems;
     }
 
-    /**
-     * Store curios items from player to gravestone as individual ItemStacks
-     * 
-     * @param player       The player whose curios to store
-     * @param graveHandler The gravestone's item handler
-     * @param startSlot    The starting slot index in the gravestone
-     * @return The next available slot index
-     */
     public static int storeCurios(Player player, ItemStackHandler graveHandler, int startSlot) {
         if (!initialized) {
             Gravestones.LOGGER.debug("Curios not initialized, skipping storage");
@@ -123,7 +92,6 @@ public class CuriosIntegration {
         }
 
         try {
-            // Get curios inventory using reflection
             Object lazyOptional = getCuriosInventoryMethod.invoke(null, player);
             Optional<?> curiosHandler = (Optional<?>) resolveMethod.invoke(lazyOptional);
 
@@ -135,19 +103,15 @@ public class CuriosIntegration {
             Object curios = curiosHandler.get();
             int slotIndex = startSlot;
 
-            // Use reflection to get curios map
             Method getCuriosMethod = curios.getClass().getMethod("getCurios");
             Map<String, Object> curiosMap = (Map<String, Object>) getCuriosMethod.invoke(curios);
 
-            // Store each curios item individually and clear from player
             for (Map.Entry<String, Object> entry : curiosMap.entrySet()) {
                 Object stacksHandler = entry.getValue();
 
-                // Get stacks from handler
                 Method getStacksMethod = stacksHandler.getClass().getMethod("getStacks");
                 Object stackHandler = getStacksMethod.invoke(stacksHandler);
 
-                // Get slot count and methods
                 Method getSlotsMethod = stackHandler.getClass().getMethod("getSlots");
                 Method getStackInSlotMethod = stackHandler.getClass().getMethod("getStackInSlot", int.class);
                 Method setStackInSlotMethod = stackHandler.getClass().getMethod("setStackInSlot", int.class,
@@ -155,13 +119,10 @@ public class CuriosIntegration {
 
                 int slots = (Integer) getSlotsMethod.invoke(stackHandler);
 
-                // Store and clear each item from this slot type
                 for (int i = 0; i < slots; i++) {
                     ItemStack stack = (ItemStack) getStackInSlotMethod.invoke(stackHandler, i);
                     if (!stack.isEmpty() && slotIndex < graveHandler.getSlots()) {
-                        // Store the item in the gravestone
                         graveHandler.setStackInSlot(slotIndex, stack.copy());
-                        // Clear the item from the player's curios
                         setStackInSlotMethod.invoke(stackHandler, i, ItemStack.EMPTY);
                         slotIndex++;
                     }
@@ -176,15 +137,6 @@ public class CuriosIntegration {
         }
     }
 
-    /**
-     * Restore curios items from gravestone to player
-     * 
-     * @param player           The player to restore curios to
-     * @param graveHandler     The gravestone's item handler
-     * @param startSlot        The starting slot index in the gravestone
-     * @param itemsToDropAtEnd List to add items that couldn't be restored
-     * @return The next slot index after curios slots
-     */
     public static int restoreCurios(Player player, ItemStackHandler graveHandler, int startSlot,
             List<ItemStack> itemsToDropAtEnd) {
         if (!initialized) {
@@ -193,7 +145,6 @@ public class CuriosIntegration {
         }
 
         try {
-            // Get curios inventory using reflection
             Object lazyOptional = getCuriosInventoryMethod.invoke(null, player);
             Optional<?> curiosHandler = (Optional<?>) resolveMethod.invoke(lazyOptional);
 
@@ -205,11 +156,9 @@ public class CuriosIntegration {
             Object curios = curiosHandler.get();
             int slotIndex = startSlot;
 
-            // Use reflection to get curios map
             Method getCuriosMethod = curios.getClass().getMethod("getCurios");
             Map<String, Object> curiosMap = (Map<String, Object>) getCuriosMethod.invoke(curios);
 
-            // Restore curios items from gravestone slots
             while (slotIndex < graveHandler.getSlots()) {
                 ItemStack stack = graveHandler.getStackInSlot(slotIndex);
                 if (stack.isEmpty()) {
@@ -217,7 +166,6 @@ public class CuriosIntegration {
                     continue;
                 }
 
-                // Try to find a suitable curios slot for this item
                 boolean restored = false;
 
                 for (Map.Entry<String, Object> entry : curiosMap.entrySet()) {
@@ -227,11 +175,9 @@ public class CuriosIntegration {
                     String slotType = entry.getKey();
                     Object stacksHandler = entry.getValue();
 
-                    // Get stacks from handler
                     Method getStacksMethod = stacksHandler.getClass().getMethod("getStacks");
                     Object stackHandler = getStacksMethod.invoke(stacksHandler);
 
-                    // Get methods
                     Method getSlotsMethod = stackHandler.getClass().getMethod("getSlots");
                     Method getStackInSlotMethod = stackHandler.getClass().getMethod("getStackInSlot", int.class);
                     Method setStackInSlotMethod = stackHandler.getClass().getMethod("setStackInSlot", int.class,
@@ -241,11 +187,9 @@ public class CuriosIntegration {
 
                     int slots = (Integer) getSlotsMethod.invoke(stackHandler);
 
-                    // Check if this item can go in this slot type
                     for (int i = 0; i < slots; i++) {
                         ItemStack existingStack = (ItemStack) getStackInSlotMethod.invoke(stackHandler, i);
                         if (existingStack.isEmpty()) {
-                            // Try to place the item
                             boolean isValid = (Boolean) isItemValidMethod.invoke(stackHandler, i, stack);
                             if (isValid) {
                                 setStackInSlotMethod.invoke(stackHandler, i, stack.copy());
@@ -260,7 +204,6 @@ public class CuriosIntegration {
                 }
 
                 if (!restored) {
-                    // Couldn't restore this item, add to drop list
                     itemsToDropAtEnd.add(stack.copy());
                     graveHandler.setStackInSlot(slotIndex, ItemStack.EMPTY);
                     Gravestones.LOGGER.debug("Could not restore curios item {}, will drop",
@@ -278,14 +221,10 @@ public class CuriosIntegration {
         }
     }
 
-    /**
-     * Clear curios slots when curios handler is not available
-     */
     private static int clearCuriosSlots(ItemStackHandler graveHandler, int startSlot,
             List<ItemStack> itemsToDropAtEnd) {
         int slotIndex = startSlot;
 
-        // Clear all remaining slots that might contain curios items
         while (slotIndex < graveHandler.getSlots()) {
             ItemStack stack = graveHandler.getStackInSlot(slotIndex);
             if (stack.isEmpty()) {
@@ -301,23 +240,16 @@ public class CuriosIntegration {
         return slotIndex;
     }
 
-    /**
-     * Get the number of curios items a player has
-     */
     public static int getCuriosItemCount(Player player) {
         return getCuriosItems(player).size();
     }
 
-    /**
-     * Get the total number of curios slots a player has
-     */
     public static int getCuriosSlotCount(Player player) {
         if (!initialized) {
             return 0;
         }
 
         try {
-            // Get curios inventory using reflection
             Object lazyOptional = getCuriosInventoryMethod.invoke(null, player);
             Optional<?> curiosHandler = (Optional<?>) resolveMethod.invoke(lazyOptional);
 
@@ -328,11 +260,9 @@ public class CuriosIntegration {
             Object curios = curiosHandler.get();
             int totalSlots = 0;
 
-            // Use reflection to get curios map
             Method getCuriosMethod = curios.getClass().getMethod("getCurios");
             Map<String, Object> curiosMap = (Map<String, Object>) getCuriosMethod.invoke(curios);
 
-            // Count all slots
             for (Object stacksHandler : curiosMap.values()) {
                 Method getStacksMethod = stacksHandler.getClass().getMethod("getStacks");
                 Object stackHandler = getStacksMethod.invoke(stacksHandler);

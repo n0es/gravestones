@@ -109,7 +109,6 @@ public class GravestoneConfig {
                 ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, SPEC);
         }
 
-        // Helper class for easier access to config values
         public static class ItemLossSettings {
                 public boolean enableItemLoss = false;
                 public int minSlotsLostPercent = 5;
@@ -118,7 +117,7 @@ public class GravestoneConfig {
                 public int maxStackLossPercent = 50;
                 public int minDurabilityLossPercent = 10;
                 public int maxDurabilityLossPercent = 30;
-                public List<String> itemBlacklist = Arrays.asList("minecraft:totem_of_undying", "curios:ring");
+                public List<String> itemBlacklist = Arrays.asList("minecraft:totem_of_undying");
                 public boolean affectCuriosItems = false;
                 public boolean protectEnchantedItems = true;
                 public int enchantedItemProtection = 50;

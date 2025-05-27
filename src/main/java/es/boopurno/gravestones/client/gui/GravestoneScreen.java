@@ -14,7 +14,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 
 public class GravestoneScreen extends AbstractContainerScreen<GravestoneMenu> {
-    // Custom textures
     private static final ResourceLocation GRAVESTONE_VANILLA_TEXTURE = new ResourceLocation(Gravestones.MODID,
             "textures/gui/gravestone_vanilla.png");
     private static final ResourceLocation GRAVESTONE_EXTRA_TEXTURE = new ResourceLocation(Gravestones.MODID,
@@ -24,7 +23,6 @@ public class GravestoneScreen extends AbstractContainerScreen<GravestoneMenu> {
     private static final ResourceLocation SLOT_TEXTURE = new ResourceLocation(Gravestones.MODID,
             "textures/gui/slot.png");
 
-    // Empty armor slot textures
     private static final ResourceLocation EMPTY_ARMOR_SLOT_HELMET = new ResourceLocation("minecraft",
             "textures/item/empty_armor_slot_helmet.png");
     private static final ResourceLocation EMPTY_ARMOR_SLOT_CHESTPLATE = new ResourceLocation("minecraft",
@@ -38,7 +36,7 @@ public class GravestoneScreen extends AbstractContainerScreen<GravestoneMenu> {
 
     private final boolean hasCosmeticArmor;
     private final boolean hasCurios;
-    private final int yOffset; // 18 pixels down when cosmetic armor is present
+    private final int yOffset;
 
     public GravestoneScreen(GravestoneMenu pMenu, Inventory pPlayerInventory, Component pTitle) {
         super(pMenu, pPlayerInventory, pTitle);
@@ -47,20 +45,15 @@ public class GravestoneScreen extends AbstractContainerScreen<GravestoneMenu> {
         this.hasCosmeticArmor = blockEntity != null && blockEntity.hasCosmeticArmor();
         this.hasCurios = blockEntity != null && blockEntity.hasCurios();
 
-        //
-        // Calculate offset and size
         this.yOffset = hasCosmeticArmor ? 18 : 0;
 
-        // Keep the main GUI size as original - we'll handle curios positioning
-        // separately
-        this.imageWidth = 176; // Always use original width for centering
-        this.imageHeight = hasCosmeticArmor ? 256 : 238; // Adjusted for extra height when cosmetic armor present
+        this.imageWidth = 176;
+        this.imageHeight = hasCosmeticArmor ? 256 : 238;
 
-        // Position labels - keep main GUI labels in original position
-        this.titleLabelX = 8; // Keep title at original position
-        this.titleLabelY = 6; // Keep title at fixed position, don't add yOffset here
-        this.inventoryLabelX = 8; // Keep inventory label at original position
-        this.inventoryLabelY = 140 + yOffset; // Player inventory label moves with offset
+        this.titleLabelX = 8;
+        this.titleLabelY = 6;
+        this.inventoryLabelX = 8;
+        this.inventoryLabelY = 140 + yOffset;
     }
 
     @Override
@@ -69,10 +62,8 @@ public class GravestoneScreen extends AbstractContainerScreen<GravestoneMenu> {
         int x = (this.width - this.imageWidth) / 2;
         int y = (this.height - this.imageHeight) / 2;
 
-        // Position transfer button between grave inventory and player inventory
-        // Button is centered on the main texture (which is now always centered)
         int buttonY = y + 118 + yOffset;
-        int buttonX = x + (176 / 2) - 50; // Center on the main texture
+        int buttonX = x + (176 / 2) - 50;
 
         this.addRenderableWidget(
                 Button.builder(Component.translatable("gui.gravestones.button.transfer_items"), (button) -> {
@@ -89,42 +80,34 @@ public class GravestoneScreen extends AbstractContainerScreen<GravestoneMenu> {
         int x = (width - imageWidth) / 2;
         int y = (height - imageHeight) / 2;
 
-        // Main GUI is always centered - no offset needed
         int mainGuiX = x;
-        int textureWidth = 176; // Original texture width
+        int textureWidth = 176;
 
-        // Use appropriate texture based on cosmetic armor presence
         ResourceLocation texture = hasCosmeticArmor ? GRAVESTONE_EXTRA_TEXTURE : GRAVESTONE_VANILLA_TEXTURE;
         pGuiGraphics.blit(texture, mainGuiX, y, 0, 0, textureWidth, imageHeight);
 
-        // Render curios slots if needed - these go to the left of the centered main GUI
         if (hasCurios) {
             renderCuriosSlots(pGuiGraphics, x, y);
         }
 
-        // Render cosmetic armor slot sprites if needed
         if (hasCosmeticArmor) {
             renderCosmeticArmorSlots(pGuiGraphics, mainGuiX, y);
         }
 
-        // Render empty armor slot icons
         renderEmptyArmorSlotIcons(pGuiGraphics, mainGuiX, y);
     }
 
     private void renderCosmeticArmorSlots(GuiGraphics pGuiGraphics, int x, int y) {
-        // Render 4 cosmetic armor slot sprites at y=18 (same as slot positions)
-        int startX = x + 7; // Same x as slot positions
-        int startY = y + 17; // Same y as slot positions
+        int startX = x + 7;
+        int startY = y + 17;
 
-        for (int i = 0; i < 4; i++) { // Only 4 slots, no cosmetic offhand
+        for (int i = 0; i < 4; i++) {
             int slotX = startX + (i * 18);
-            // Render slot background using your custom slot texture
             pGuiGraphics.blit(SLOT_TEXTURE, slotX, startY, 0, 0, 18, 18, 18, 18);
         }
     }
 
     private void renderCuriosSlots(GuiGraphics pGuiGraphics, int x, int y) {
-        // Render curios slots dynamically based on actual curios items stored
         GravestoneBlockEntity blockEntity = this.menu.getBlockEntity();
         if (blockEntity == null)
             return;
@@ -134,46 +117,33 @@ public class GravestoneScreen extends AbstractContainerScreen<GravestoneMenu> {
             return;
 
         int slotsPerColumn = 6;
-        int columns = (curiosCount + slotsPerColumn - 1) / slotsPerColumn; // Ceiling division
+        int columns = (curiosCount + slotsPerColumn - 1) / slotsPerColumn;
         int rows = Math.min(curiosCount, slotsPerColumn);
 
-        // Calculate panel dimensions
-        int panelWidth = columns * 18 + 14; // 18 pixels per column + 14 for borders (7px on each side)
-        int panelHeight = rows * 18 + 14; // 18 pixels per row + 14 for borders (7px on each side)
+        int panelWidth = columns * 18 + 14;
+        int panelHeight = rows * 18 + 14;
 
-        // Calculate panel position (to the left of main GUI)
-        int panelX = x - panelWidth - 1; // 3 pixels gap from main GUI
-        int panelY = y + yOffset - 8; // Align with main inventory
+        int panelX = x - panelWidth - 1;
+        int panelY = y + yOffset - 8;
 
-        // Render the panel backdrop
         renderCuriosPanel(pGuiGraphics, panelX, panelY, panelWidth, panelHeight);
 
-        // Render individual slot backgrounds
         for (int i = 0; i < curiosCount; i++) {
             int column = i / slotsPerColumn;
             int row = i % slotsPerColumn;
 
-            // Reverse column order so partial columns appear on the left
             int reversedColumn = columns - 1 - column;
 
-            // Slot positions relative to panel
-            int slotX = panelX + 7 + reversedColumn * 18; // 7 pixels from panel edge
-            int slotY = panelY + 7 + row * 18; // 7 pixels from panel edge
+            int slotX = panelX + 7 + reversedColumn * 18;
+            int slotY = panelY + 7 + row * 18;
 
-            // Render slot background using your custom slot texture
             pGuiGraphics.blit(SLOT_TEXTURE, slotX, slotY, 0, 0, 18, 18, 18, 18);
         }
     }
 
-    /**
-     * Renders a scalable panel backdrop using 9-slice approach with 24x24 texture
-     * Treats the texture as a 3x3 grid of 8x8 sections for corners, edges, and
-     * center
-     */
     private void renderCuriosPanel(GuiGraphics pGuiGraphics, int x, int y, int width, int height) {
-        int sliceSize = 8; // Each slice is 8x8 pixels
+        int sliceSize = 8;
 
-        // Render corners (fixed size, never stretch)
         // Top-left corner
         pGuiGraphics.blit(CURIOS_PANEL_TEXTURE, x, y, 0, 0, sliceSize, sliceSize, 24, 24);
 
@@ -187,7 +157,6 @@ public class GravestoneScreen extends AbstractContainerScreen<GravestoneMenu> {
         pGuiGraphics.blit(CURIOS_PANEL_TEXTURE, x + width - sliceSize, y + height - sliceSize, 16, 16, sliceSize,
                 sliceSize, 24, 24);
 
-        // Render edges (tile to fill the space)
         // Top edge
         for (int i = sliceSize; i < width - sliceSize; i += sliceSize) {
             int segmentWidth = Math.min(sliceSize, width - sliceSize - i);
@@ -214,7 +183,7 @@ public class GravestoneScreen extends AbstractContainerScreen<GravestoneMenu> {
                     24);
         }
 
-        // Fill the center area
+        // Center
         for (int i = sliceSize; i < width - sliceSize; i += sliceSize) {
             for (int j = sliceSize; j < height - sliceSize; j += sliceSize) {
                 int segmentWidth = Math.min(sliceSize, width - sliceSize - i);
@@ -271,13 +240,8 @@ public class GravestoneScreen extends AbstractContainerScreen<GravestoneMenu> {
 
     @Override
     public void render(GuiGraphics pGuiGraphics, int pMouseX, int pMouseY, float pPartialTick) {
-        // Render the background dimming effect (semi-transparent dark overlay)
         this.renderBackground(pGuiGraphics);
-
-        // Render the GUI and its contents
         super.render(pGuiGraphics, pMouseX, pMouseY, pPartialTick);
-
-        // Render tooltips on top
         this.renderTooltip(pGuiGraphics, pMouseX, pMouseY);
     }
 
@@ -288,7 +252,6 @@ public class GravestoneScreen extends AbstractContainerScreen<GravestoneMenu> {
                 0x404040, false);
     }
 
-    // Getter for yOffset to use in menu positioning
     public int getYOffset() {
         return yOffset;
     }

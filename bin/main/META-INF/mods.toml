@@ -10,7 +10,7 @@ displayName = "${mod_name}"
 # A URL for the "homepage" for this mod, displayed in the mod UI
 #displayURL="https://change.me.to.your.mods.homepage.example.invalid/" #optional
 # A file name (in the root of the mod JAR) containing a logo for display
-#logoFile="gravestones.png" #optional
+logoFile = "gravestones.png" #optional
 # A text field displayed in the mod UI
 #credits="Thanks for this example mod goes to Java" #optional
 # A text field displayed in the mod UI
@@ -31,10 +31,5 @@ versionRange = "${minecraft_version_range}"
 ordering = "NONE"
 side = "BOTH"
 
-# COMMENTED OUT FOR STANDALONE TESTING
-# [[dependencies."${mod_id}"]]
-# modId = "curios"
-# mandatory = false
-# versionRange = "[${curios_version},)"
-# ordering = "AFTER"
-# side = "BOTH"
+[modproperties."${mod_id}"]
+catalogueImageIcon = "gravestones.png"

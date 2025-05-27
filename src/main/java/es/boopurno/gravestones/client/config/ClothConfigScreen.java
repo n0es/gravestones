@@ -15,28 +15,23 @@ public class ClothConfigScreen {
 
         public static Screen createConfigScreen(Screen parent) {
                 try {
-                        // Use reflection to avoid compile-time dependency issues
                         Class<?> configBuilderClass = Class.forName("me.shedaniel.clothconfig2.api.ConfigBuilder");
                         Object builder = configBuilderClass.getMethod("create").invoke(null);
 
-                        // Set parent screen and title
                         configBuilderClass.getMethod("setParentScreen", Screen.class).invoke(builder, parent);
                         configBuilderClass.getMethod("setTitle", Component.class).invoke(builder,
                                         Component.translatable("config.gravestones.title"));
 
-                        // Set saving runnable
                         configBuilderClass.getMethod("setSavingRunnable", Runnable.class).invoke(builder,
                                         (Runnable) () -> {
                                                 GravestoneConfig.SPEC.save();
                                         });
 
-                        // Get category and entry builder
                         Object itemLoss = configBuilderClass.getMethod("getOrCreateCategory", Component.class)
                                         .invoke(builder, Component
                                                         .translatable("config.gravestones.category.item_loss"));
                         Object entryBuilder = configBuilderClass.getMethod("entryBuilder").invoke(builder);
 
-                        // Add entries using reflection
                         addBooleanEntry(itemLoss, entryBuilder, "config.gravestones.enable_item_loss",
                                         GravestoneConfig.ENABLE_ITEM_LOSS.get(), false,
                                         newValue -> GravestoneConfig.ENABLE_ITEM_LOSS.set((Boolean) newValue));
@@ -84,7 +79,6 @@ public class ClothConfigScreen {
                                         GravestoneConfig.ENCHANTED_ITEM_PROTECTION.get(), 50, 0, 100,
                                         newValue -> GravestoneConfig.ENCHANTED_ITEM_PROTECTION.set((Integer) newValue));
 
-                        // Curse Mechanics Category
                         Object curseMechanics = configBuilderClass.getMethod("getOrCreateCategory", Component.class)
                                         .invoke(builder, Component
                                                         .translatable("config.gravestones.category.curse_mechanics"));
@@ -107,12 +101,10 @@ public class ClothConfigScreen {
                                         Arrays.asList("minecraft:binding_curse", "minecraft:vanishing_curse"),
                                         newValue -> GravestoneConfig.AVAILABLE_CURSES.set((List<String>) newValue));
 
-                        // Build and return the screen
                         return (Screen) configBuilderClass.getMethod("build").invoke(builder);
 
                 } catch (Exception e) {
                         e.printStackTrace();
-                        // Fallback to simple screen if Cloth Config fails
                         return new SimpleConfigScreen(parent);
                 }
         }
@@ -126,22 +118,18 @@ public class ClothConfigScreen {
 
                 entry = entry.getClass().getMethod("setDefaultValue", boolean.class).invoke(entry, defaultValue);
 
-                // Try different setTooltip method signatures
                 try {
-                        // Try with Optional<Component[]>
                         Component[] tooltipArray = new Component[] {
                                         Component.translatable(translationKey + ".tooltip") };
                         entry = entry.getClass().getMethod("setTooltip", Optional.class)
                                         .invoke(entry, Optional.of(tooltipArray));
                 } catch (NoSuchMethodException e1) {
                         try {
-                                // Try with Component[]
                                 Component[] tooltipArray = new Component[] {
                                                 Component.translatable(translationKey + ".tooltip") };
                                 entry = entry.getClass().getMethod("setTooltip", Component[].class)
                                                 .invoke(entry, (Object) tooltipArray);
                         } catch (NoSuchMethodException e2) {
-                                // Skip tooltip if method not found
                                 System.out.println(
                                                 "Could not set tooltip for " + translationKey + " - method not found");
                         }
@@ -164,22 +152,18 @@ public class ClothConfigScreen {
 
                 entry = entry.getClass().getMethod("setDefaultValue", int.class).invoke(entry, defaultValue);
 
-                // Try different setTooltip method signatures
                 try {
-                        // Try with Optional<Component[]>
                         Component[] tooltipArray = new Component[] {
                                         Component.translatable(translationKey + ".tooltip") };
                         entry = entry.getClass().getMethod("setTooltip", Optional.class)
                                         .invoke(entry, Optional.of(tooltipArray));
                 } catch (NoSuchMethodException e1) {
                         try {
-                                // Try with Component[]
                                 Component[] tooltipArray = new Component[] {
                                                 Component.translatable(translationKey + ".tooltip") };
                                 entry = entry.getClass().getMethod("setTooltip", Component[].class)
                                                 .invoke(entry, (Object) tooltipArray);
                         } catch (NoSuchMethodException e2) {
-                                // Skip tooltip if method not found
                                 System.out.println(
                                                 "Could not set tooltip for " + translationKey + " - method not found");
                         }
@@ -201,22 +185,18 @@ public class ClothConfigScreen {
 
                 entry = entry.getClass().getMethod("setDefaultValue", List.class).invoke(entry, defaultValue);
 
-                // Try different setTooltip method signatures
                 try {
-                        // Try with Optional<Component[]>
                         Component[] tooltipArray = new Component[] {
                                         Component.translatable(translationKey + ".tooltip") };
                         entry = entry.getClass().getMethod("setTooltip", Optional.class)
                                         .invoke(entry, Optional.of(tooltipArray));
                 } catch (NoSuchMethodException e1) {
                         try {
-                                // Try with Component[]
                                 Component[] tooltipArray = new Component[] {
                                                 Component.translatable(translationKey + ".tooltip") };
                                 entry = entry.getClass().getMethod("setTooltip", Component[].class)
                                                 .invoke(entry, (Object) tooltipArray);
                         } catch (NoSuchMethodException e2) {
-                                // Skip tooltip if method not found
                                 System.out.println(
                                                 "Could not set tooltip for " + translationKey + " - method not found");
                         }
@@ -232,22 +212,17 @@ public class ClothConfigScreen {
         private static void addEntryToCategory(Object category, Object entry) throws Exception {
                 Class<?> categoryClass = category.getClass();
 
-                // Try different method signatures for addEntry
                 try {
-                        // Try with AbstractConfigListEntry
                         Class<?> abstractConfigListEntryClass = Class
                                         .forName("me.shedaniel.clothconfig2.api.AbstractConfigListEntry");
                         categoryClass.getMethod("addEntry", abstractConfigListEntryClass).invoke(category, entry);
                 } catch (Exception e1) {
                         try {
-                                // Try with the actual entry class
                                 categoryClass.getMethod("addEntry", entry.getClass()).invoke(category, entry);
                         } catch (Exception e2) {
                                 try {
-                                        // Try with Object
                                         categoryClass.getMethod("addEntry", Object.class).invoke(category, entry);
                                 } catch (Exception e3) {
-                                        // Try to find any addEntry method
                                         java.lang.reflect.Method[] methods = categoryClass.getMethods();
                                         for (java.lang.reflect.Method method : methods) {
                                                 if (method.getName().equals("addEntry")

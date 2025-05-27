@@ -24,7 +24,8 @@ public class DeathEvents {
             Level level = player.level();
 
             if (level.getGameRules().getBoolean(GameRules.RULE_KEEPINVENTORY)) {
-                Gravestones.LOGGER.debug("keepInventory is true. Gravestone will not be placed for player {}", player.getName().getString());
+                Gravestones.LOGGER.debug("keepInventory is true. Gravestone will not be placed for player {}",
+                        player.getName().getString());
                 return;
             }
 
@@ -38,7 +39,9 @@ public class DeathEvents {
             }
 
             if (!stateAtPlacementPos.canBeReplaced()) {
-                Gravestones.LOGGER.warn("Could not find a suitable replaceable spot for gravestone for player {} at or above {}", player.getName().getString(), deathPos);
+                Gravestones.LOGGER.warn(
+                        "Could not find a suitable replaceable spot for gravestone for player {} at or above {}",
+                        player.getName().getString(), deathPos);
                 // TODO: wider search- always place a gravestone.
                 return;
             }
@@ -50,7 +53,8 @@ public class DeathEvents {
                 Gravestones.LOGGER.info("Placed gravestone for player {} at {}", playerName, placementPos);
 
                 player.getInventory().clearContent();
-                Gravestones.LOGGER.debug("Cleared live inventory for player {} after copying to gravestone.", playerName);
+                Gravestones.LOGGER.debug("Cleared live inventory for player {} after copying to gravestone.",
+                        playerName);
             } else {
                 Gravestones.LOGGER.error("GRAVESTONE_BLOCK is not an instance of GravestoneBlock! Cannot place grave.");
             }

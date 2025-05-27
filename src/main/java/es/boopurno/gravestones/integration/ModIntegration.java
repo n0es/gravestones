@@ -1,8 +1,6 @@
 package es.boopurno.gravestones.integration;
 
 import es.boopurno.gravestones.Gravestones;
-import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.fml.ModList;
@@ -11,47 +9,29 @@ import net.minecraftforge.items.ItemStackHandler;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Handles integration with various mods for storing and restoring player
- * inventories
- */
 public class ModIntegration {
+    public static final int GRAVE_MAIN_INVENTORY_SLOTS = 27;
+    public static final int GRAVE_HOTBAR_SLOTS = 9;
+    public static final int BASE_ARMOR_SLOTS = 4;
+    public static final int BASE_OFFHAND_SLOTS = 1;
+    public static final int COSMETIC_ARMOR_SLOTS = 4;
 
-    // Slot layout constants
-    public static final int GRAVE_MAIN_INVENTORY_SLOTS = 27; // 3x9 grid
-    public static final int GRAVE_HOTBAR_SLOTS = 9; // 1x9 grid
-    public static final int BASE_ARMOR_SLOTS = 4; // Standard armor
-    public static final int BASE_OFFHAND_SLOTS = 1; // Offhand/shield
-    public static final int COSMETIC_ARMOR_SLOTS = 4; // Cosmetic armor (4 armor slots only, no offhand)
-
-    /**
-     * Check if Cosmetic Armor is actually available and initialized
-     */
     public static boolean hasCosmeticArmor() {
         return ModList.get().isLoaded("cosmeticarmorreworked") && CosmeticArmorIntegration.isInitialized();
     }
 
-    /**
-     * Check if Curios is actually available and initialized
-     */
     public static boolean hasCurios() {
         return ModList.get().isLoaded("curios") && CuriosIntegration.isInitialized();
     }
 
-    /**
-     * Calculate the total inventory size needed based on loaded mods and player's
-     * actual curio slots
-     */
     public static int calculateInventorySize(Player player) {
-        int size = GRAVE_MAIN_INVENTORY_SLOTS + GRAVE_HOTBAR_SLOTS + BASE_ARMOR_SLOTS + BASE_OFFHAND_SLOTS; // 41 base
-                                                                                                            // slots
+        int size = GRAVE_MAIN_INVENTORY_SLOTS + GRAVE_HOTBAR_SLOTS + BASE_ARMOR_SLOTS + BASE_OFFHAND_SLOTS;
 
         if (hasCosmeticArmor()) {
             size += COSMETIC_ARMOR_SLOTS;
         }
 
         if (hasCurios() && player != null) {
-            // Dynamically calculate curio slots based on player's actual curio inventory
             int curiosSlots = CuriosIntegration.getCuriosSlotCount(player);
             size += curiosSlots;
             Gravestones.LOGGER.debug("Player has {} curio slots, adding to gravestone size", curiosSlots);
@@ -60,136 +40,178 @@ public class ModIntegration {
         return size;
     }
 
-    /**
-     * Calculate the total inventory size needed based on loaded mods (fallback
-     * without player)
-     */
     public static int calculateInventorySize() {
-        int size = GRAVE_MAIN_INVENTORY_SLOTS + GRAVE_HOTBAR_SLOTS + BASE_ARMOR_SLOTS + BASE_OFFHAND_SLOTS; // 41 base
-                                                                                                            // slots
+        int size = GRAVE_MAIN_INVENTORY_SLOTS + GRAVE_HOTBAR_SLOTS + BASE_ARMOR_SLOTS + BASE_OFFHAND_SLOTS;
 
         if (hasCosmeticArmor()) {
             size += COSMETIC_ARMOR_SLOTS;
         }
 
         if (hasCurios()) {
-            // Use a reasonable default when player is not available
-            size += 24; // Default to 24 slots to handle most cases
+            size += 24;
             Gravestones.LOGGER.debug("Using default curio slot count of 24 for gravestone size calculation");
         }
 
         return size;
     }
 
-    /**
-     * Initialize all mod integrations
-     */
     public static void init() {
-        // Always try to initialize integrations - they will handle their own detection
         CosmeticArmorIntegration.init();
         CuriosIntegration.init();
 
-        // Log the final status
         Gravestones.LOGGER.info("Mod integration status - CosmeticArmor: {}, Curios: {}",
                 hasCosmeticArmor(), hasCurios());
     }
 
-    /**
-     * Store all player inventory items including mod items to gravestone
-     */
     public static void storePlayerInventory(Player player, ItemStackHandler graveHandler) {
-        // Store main inventory (slots 0-26) - 3x9 grid
+        Gravestones.LOGGER.info("=== STORING PLAYER INVENTORY ===");
+        Gravestones.LOGGER.info("Cosmetic Armor available: {}", hasCosmeticArmor());
+        Gravestones.LOGGER.info("Curios available: {}", hasCurios());
+        Gravestones.LOGGER.info("Gravestone handler size: {}", graveHandler.getSlots());
+
         for (int i = 0; i < 27; i++) {
-            graveHandler.setStackInSlot(i, player.getInventory().items.get(i + 9).copy()); // Skip hotbar initially
+            ItemStack item = player.getInventory().items.get(i + 9);
+            if (!item.isEmpty()) {
+                graveHandler.setStackInSlot(i, item.copy());
+                Gravestones.LOGGER.info("Stored main inventory item {} in slot {}", item.getDisplayName().getString(),
+                        i);
+            }
         }
 
-        // Store hotbar (slots 27-35) - 1x9 grid
         for (int i = 0; i < 9; i++) {
-            graveHandler.setStackInSlot(27 + i, player.getInventory().items.get(i).copy()); // Hotbar is items 0-8
+            ItemStack item = player.getInventory().items.get(i);
+            if (!item.isEmpty()) {
+                graveHandler.setStackInSlot(27 + i, item.copy());
+                Gravestones.LOGGER.info("Stored hotbar item {} in slot {}", item.getDisplayName().getString(), 27 + i);
+            }
         }
 
-        // Store armor (slots 36-39) + offhand (slot 40) = 5 slots total
         for (int i = 0; i < 4; i++) {
-            graveHandler.setStackInSlot(36 + i, player.getInventory().armor.get(i).copy());
-        }
-        // Offhand as 5th armor slot
-        if (!player.getInventory().offhand.get(0).isEmpty()) {
-            graveHandler.setStackInSlot(40, player.getInventory().offhand.get(0).copy());
+            ItemStack item = player.getInventory().armor.get(i);
+            if (!item.isEmpty()) {
+                graveHandler.setStackInSlot(36 + i, item.copy());
+                Gravestones.LOGGER.info("Stored armor item {} in slot {}", item.getDisplayName().getString(), 36 + i);
+            }
         }
 
-        int nextSlot = 41; // Start after armor + offhand
+        ItemStack offhandItem = player.getInventory().offhand.get(0);
+        if (!offhandItem.isEmpty()) {
+            graveHandler.setStackInSlot(40, offhandItem.copy());
+            Gravestones.LOGGER.info("Stored offhand item {} in slot {}", offhandItem.getDisplayName().getString(), 40);
+        }
 
-        // Store cosmetic armor if available (slots 41-44)
+        int nextSlot = 41;
+        Gravestones.LOGGER.info("Starting mod integration storage at slot {}", nextSlot);
+
         if (hasCosmeticArmor()) {
+            Gravestones.LOGGER.info("Storing cosmetic armor starting at slot {}", nextSlot);
             nextSlot = CosmeticArmorIntegration.storeCosmeticArmor(player, graveHandler, nextSlot);
+            Gravestones.LOGGER.info("Cosmetic armor storage finished, next slot: {}", nextSlot);
+        } else {
+            Gravestones.LOGGER.info("Cosmetic armor not available, skipping slots 41-44");
+            nextSlot += 4;
         }
 
-        // Store curios if available
         if (hasCurios()) {
+            Gravestones.LOGGER.info("Storing curios starting at slot {}", nextSlot);
             nextSlot = storeCurios(player, graveHandler, nextSlot);
+            Gravestones.LOGGER.info("Curios storage finished, next slot: {}", nextSlot);
+        } else {
+            Gravestones.LOGGER.info("Curios not available, skipping curios storage");
         }
 
-        Gravestones.LOGGER.debug("Stored player inventory with {} total slots used", nextSlot);
+        Gravestones.LOGGER.info("=== STORAGE COMPLETE - {} total slots used ===", nextSlot);
+
+        for (int i = 0; i < graveHandler.getSlots(); i++) {
+            ItemStack item = graveHandler.getStackInSlot(i);
+            if (!item.isEmpty()) {
+                Gravestones.LOGGER.info("Gravestone slot {}: {}", i, item.getDisplayName().getString());
+            }
+        }
     }
 
-    /**
-     * Restore items from gravestone to player inventory including mod items
-     */
     public static void restorePlayerInventory(Player player, ItemStackHandler graveHandler) {
+        Gravestones.LOGGER.info("=== RESTORING PLAYER INVENTORY ===");
+        Gravestones.LOGGER.info("Cosmetic Armor available: {}", hasCosmeticArmor());
+        Gravestones.LOGGER.info("Curios available: {}", hasCurios());
+        Gravestones.LOGGER.info("Gravestone handler size: {}", graveHandler.getSlots());
+
+        for (int i = 0; i < graveHandler.getSlots(); i++) {
+            ItemStack item = graveHandler.getStackInSlot(i);
+            if (!item.isEmpty()) {
+                Gravestones.LOGGER.info("Gravestone slot {} contains: {}", i, item.getDisplayName().getString());
+            }
+        }
+
         List<ItemStack> itemsToDropAtEnd = new ArrayList<>();
 
-        // Restore armor first (slots 36-39)
+        Gravestones.LOGGER.info("Restoring armor from slots 36-39");
         restoreArmor(player, graveHandler, itemsToDropAtEnd);
 
-        // Restore offhand (slot 40)
+        Gravestones.LOGGER.info("Restoring offhand from slot 40");
         restoreOffhand(player, graveHandler, itemsToDropAtEnd);
 
-        // Restore main inventory (slots 0-26)
+        Gravestones.LOGGER.info("Restoring main inventory from slots 0-26");
         restoreMainInventory(player, graveHandler, itemsToDropAtEnd);
 
-        // Restore hotbar (slots 27-35)
+        Gravestones.LOGGER.info("Restoring hotbar from slots 27-35");
         restoreHotbar(player, graveHandler, itemsToDropAtEnd);
 
         int nextSlot = 41;
+        Gravestones.LOGGER.info("Starting mod integration restoration at slot {}", nextSlot);
 
-        // Restore cosmetic armor if available (slots 41-44)
         if (hasCosmeticArmor()) {
+            Gravestones.LOGGER.info("Restoring cosmetic armor starting at slot {}", nextSlot);
             nextSlot = CosmeticArmorIntegration.restoreCosmeticArmor(player, graveHandler, nextSlot, itemsToDropAtEnd);
+            Gravestones.LOGGER.info("Cosmetic armor restoration finished, next slot: {}", nextSlot);
+        } else {
+            Gravestones.LOGGER.info("Cosmetic armor not available, clearing slots 41-44");
+            for (int i = 0; i < 4 && (nextSlot + i) < graveHandler.getSlots(); i++) {
+                ItemStack stack = graveHandler.getStackInSlot(nextSlot + i);
+                if (!stack.isEmpty()) {
+                    itemsToDropAtEnd.add(stack);
+                    graveHandler.setStackInSlot(nextSlot + i, ItemStack.EMPTY);
+                    Gravestones.LOGGER.info("Dropping item from cosmetic armor slot {}: {}", nextSlot + i,
+                            stack.getDisplayName().getString());
+                }
+            }
+            nextSlot += 4;
         }
 
-        // Restore curios if available
         if (hasCurios()) {
+            Gravestones.LOGGER.info("Restoring curios starting at slot {}", nextSlot);
+            nextSlot = restoreCurios(player, graveHandler, nextSlot, itemsToDropAtEnd);
+            Gravestones.LOGGER.info("Curios restoration finished, next slot: {}", nextSlot);
+        } else {
+            Gravestones.LOGGER.info("Curios not available, clearing remaining slots starting at {}", nextSlot);
             nextSlot = restoreCurios(player, graveHandler, nextSlot, itemsToDropAtEnd);
         }
 
-        // Drop items that couldn't be placed (if player is not creative)
         if (!player.isCreative()) {
             for (ItemStack stackToDrop : itemsToDropAtEnd) {
                 if (!stackToDrop.isEmpty()) {
                     player.drop(stackToDrop, false);
+                    Gravestones.LOGGER.info("Dropped item: {}", stackToDrop.getDisplayName().getString());
                 }
             }
         }
 
-        Gravestones.LOGGER.debug("Restored player inventory, {} items dropped", itemsToDropAtEnd.size());
+        Gravestones.LOGGER.info("=== RESTORATION COMPLETE - {} items dropped ===", itemsToDropAtEnd.size());
     }
 
     private static int storeCurios(Player player, ItemStackHandler graveHandler, int startSlot) {
         if (hasCurios()) {
             return CuriosIntegration.storeCurios(player, graveHandler, startSlot);
         }
-        // If curios is not available, just return the start slot
         Gravestones.LOGGER.debug("Curios not available - no slots reserved starting at {}", startSlot);
         return startSlot;
     }
 
     private static void restoreArmor(Player player, ItemStackHandler graveHandler, List<ItemStack> itemsToDropAtEnd) {
-        // Restore armor slots (36-39)
         for (int i = 0; i < 4; i++) {
             int graveSlot = 36 + i;
             ItemStack armorPiece = graveHandler.getStackInSlot(graveSlot);
             if (!armorPiece.isEmpty()) {
-                // Try to equip armor piece or add to inventory
                 if (player.getInventory().armor.get(i).isEmpty()) {
                     player.getInventory().armor.set(i, armorPiece.copy());
                     graveHandler.setStackInSlot(graveSlot, ItemStack.EMPTY);
@@ -221,12 +243,10 @@ public class ModIntegration {
 
     private static void restoreMainInventory(Player player, ItemStackHandler graveHandler,
             List<ItemStack> itemsToDropAtEnd) {
-        // Restore main inventory (slots 0-26) to player inventory slots 9-35
         for (int i = 0; i < 27; i++) {
             ItemStack item = graveHandler.getStackInSlot(i);
             if (!item.isEmpty()) {
-                int playerSlot = i + 9; // Grave slot 0 -> player slot 9, etc.
-                // Try to place in original slot first
+                int playerSlot = i + 9;
                 if (player.getInventory().items.get(playerSlot).isEmpty()) {
                     player.getInventory().items.set(playerSlot, item.copy());
                     graveHandler.setStackInSlot(i, ItemStack.EMPTY);
@@ -241,13 +261,12 @@ public class ModIntegration {
     }
 
     private static void restoreHotbar(Player player, ItemStackHandler graveHandler, List<ItemStack> itemsToDropAtEnd) {
-        // Restore hotbar (slots 27-35) to player inventory slots 0-8
         for (int i = 0; i < 9; i++) {
             int graveSlot = 27 + i;
             ItemStack item = graveHandler.getStackInSlot(graveSlot);
             if (!item.isEmpty()) {
-                int playerSlot = i; // Grave slot 27 -> player slot 0, etc.
-                // Try to place in original slot first
+                int playerSlot = i;
+
                 if (player.getInventory().items.get(playerSlot).isEmpty()) {
                     player.getInventory().items.set(playerSlot, item.copy());
                     graveHandler.setStackInSlot(graveSlot, ItemStack.EMPTY);
@@ -266,7 +285,7 @@ public class ModIntegration {
         if (hasCurios()) {
             return CuriosIntegration.restoreCurios(player, graveHandler, startSlot, itemsToDropAtEnd);
         }
-        // If curios is not available, clear any remaining slots and drop items
+
         int slotIndex = startSlot;
         while (slotIndex < graveHandler.getSlots()) {
             ItemStack item = graveHandler.getStackInSlot(slotIndex);
