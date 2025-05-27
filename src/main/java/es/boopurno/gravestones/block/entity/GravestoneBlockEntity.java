@@ -55,8 +55,8 @@ public class GravestoneBlockEntity extends BlockEntity implements MenuProvider {
     public GravestoneBlockEntity(BlockPos pPos, BlockState pBlockState) {
         super(Gravestones.GRAVESTONE_BLOCK_ENTITY_TYPE.get(), pPos, pBlockState);
 
-        this.hasCosmeticArmor = ModIntegration.HAS_COSMETIC_ARMOR;
-        this.hasCurios = ModIntegration.HAS_CURIOS;
+        this.hasCosmeticArmor = ModIntegration.hasCosmeticArmor();
+        this.hasCurios = ModIntegration.hasCurios();
         this.maxInventorySize = ModIntegration.calculateInventorySize();
 
         this.itemHandler = new ItemStackHandler(this.maxInventorySize) {
@@ -85,7 +85,7 @@ public class GravestoneBlockEntity extends BlockEntity implements MenuProvider {
     }
 
     public boolean hasCosmeticArmor() {
-        return ModIntegration.HAS_COSMETIC_ARMOR;
+        return ModIntegration.hasCosmeticArmor();
     }
 
     public boolean hasCurios() {
@@ -159,7 +159,7 @@ public class GravestoneBlockEntity extends BlockEntity implements MenuProvider {
             this.lazyItemHandler = LazyOptional.of(() -> this.itemHandler);
         }
 
-        if (ModIntegration.HAS_CURIOS) {
+        if (ModIntegration.hasCurios()) {
             this.setCuriosItemCount(CuriosIntegration.getCuriosItemCount(player));
         }
 
@@ -208,7 +208,7 @@ public class GravestoneBlockEntity extends BlockEntity implements MenuProvider {
             itemSources.add(new InventorySource("offhand", 0));
         }
 
-        if (ModIntegration.HAS_COSMETIC_ARMOR) {
+        if (ModIntegration.hasCosmeticArmor()) {
             addCosmeticArmorItems(player, allItems, itemSources);
         }
 
@@ -269,7 +269,7 @@ public class GravestoneBlockEntity extends BlockEntity implements MenuProvider {
             updateItemSource(source, itemStack, player);
         }
 
-        if (GravestoneConfig.AFFECT_CURIOS_ITEMS.get() && ModIntegration.HAS_CURIOS) {
+        if (GravestoneConfig.AFFECT_CURIOS_ITEMS.get() && ModIntegration.hasCurios()) {
             int[] curiosResults = applyCuriosItemLoss(player, random);
             itemsLost += curiosResults[0];
             stacksAffected += curiosResults[1];

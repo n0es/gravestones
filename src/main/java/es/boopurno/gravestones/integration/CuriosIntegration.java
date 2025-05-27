@@ -44,6 +44,13 @@ public class CuriosIntegration {
     }
 
     /**
+     * Check if Curios integration is initialized
+     */
+    public static boolean isInitialized() {
+        return initialized;
+    }
+
+    /**
      * Get all curios items from a player as individual ItemStacks
      * 
      * @param player The player to get curios from

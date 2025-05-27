@@ -17,10 +17,6 @@ import java.util.List;
  */
 public class ModIntegration {
 
-    // Mod detection flags
-    public static final boolean HAS_COSMETIC_ARMOR;
-    public static final boolean HAS_CURIOS;
-
     // Slot layout constants
     public static final int GRAVE_MAIN_INVENTORY_SLOTS = 27; // 3x9 grid
     public static final int GRAVE_HOTBAR_SLOTS = 9; // 1x9 grid
@@ -28,12 +24,18 @@ public class ModIntegration {
     public static final int BASE_OFFHAND_SLOTS = 1; // Offhand/shield
     public static final int COSMETIC_ARMOR_SLOTS = 4; // Cosmetic armor (4 armor slots only, no offhand)
 
-    static {
-        HAS_COSMETIC_ARMOR = ModList.get().isLoaded("cosmeticarmorreworked");
-        HAS_CURIOS = ModList.get().isLoaded("curios");
+    /**
+     * Check if Cosmetic Armor is actually available and initialized
+     */
+    public static boolean hasCosmeticArmor() {
+        return ModList.get().isLoaded("cosmeticarmorreworked") && CosmeticArmorIntegration.isInitialized();
+    }
 
-        Gravestones.LOGGER.info("Mod integration status - CosmeticArmor: {}, Curios: {}",
-                HAS_COSMETIC_ARMOR, HAS_CURIOS);
+    /**
+     * Check if Curios is actually available and initialized
+     */
+    public static boolean hasCurios() {
+        return ModList.get().isLoaded("curios") && CuriosIntegration.isInitialized();
     }
 
     /**
@@ -44,11 +46,11 @@ public class ModIntegration {
         int size = GRAVE_MAIN_INVENTORY_SLOTS + GRAVE_HOTBAR_SLOTS + BASE_ARMOR_SLOTS + BASE_OFFHAND_SLOTS; // 41 base
                                                                                                             // slots
 
-        if (HAS_COSMETIC_ARMOR) {
+        if (hasCosmeticArmor()) {
             size += COSMETIC_ARMOR_SLOTS;
         }
 
-        if (HAS_CURIOS && player != null) {
+        if (hasCurios() && player != null) {
             // Dynamically calculate curio slots based on player's actual curio inventory
             int curiosSlots = CuriosIntegration.getCuriosSlotCount(player);
             size += curiosSlots;
@@ -66,11 +68,11 @@ public class ModIntegration {
         int size = GRAVE_MAIN_INVENTORY_SLOTS + GRAVE_HOTBAR_SLOTS + BASE_ARMOR_SLOTS + BASE_OFFHAND_SLOTS; // 41 base
                                                                                                             // slots
 
-        if (HAS_COSMETIC_ARMOR) {
+        if (hasCosmeticArmor()) {
             size += COSMETIC_ARMOR_SLOTS;
         }
 
-        if (HAS_CURIOS) {
+        if (hasCurios()) {
             // Use a reasonable default when player is not available
             size += 24; // Default to 24 slots to handle most cases
             Gravestones.LOGGER.debug("Using default curio slot count of 24 for gravestone size calculation");
@@ -83,12 +85,13 @@ public class ModIntegration {
      * Initialize all mod integrations
      */
     public static void init() {
-        if (HAS_COSMETIC_ARMOR) {
-            CosmeticArmorIntegration.init();
-        }
-        if (HAS_CURIOS) {
-            CuriosIntegration.init();
-        }
+        // Always try to initialize integrations - they will handle their own detection
+        CosmeticArmorIntegration.init();
+        CuriosIntegration.init();
+
+        // Log the final status
+        Gravestones.LOGGER.info("Mod integration status - CosmeticArmor: {}, Curios: {}",
+                hasCosmeticArmor(), hasCurios());
     }
 
     /**
@@ -117,12 +120,12 @@ public class ModIntegration {
         int nextSlot = 41; // Start after armor + offhand
 
         // Store cosmetic armor if available (slots 41-44)
-        if (HAS_COSMETIC_ARMOR) {
+        if (hasCosmeticArmor()) {
             nextSlot = CosmeticArmorIntegration.storeCosmeticArmor(player, graveHandler, nextSlot);
         }
 
         // Store curios if available
-        if (HAS_CURIOS) {
+        if (hasCurios()) {
             nextSlot = storeCurios(player, graveHandler, nextSlot);
         }
 
@@ -150,12 +153,12 @@ public class ModIntegration {
         int nextSlot = 41;
 
         // Restore cosmetic armor if available (slots 41-44)
-        if (HAS_COSMETIC_ARMOR) {
+        if (hasCosmeticArmor()) {
             nextSlot = CosmeticArmorIntegration.restoreCosmeticArmor(player, graveHandler, nextSlot, itemsToDropAtEnd);
         }
 
         // Restore curios if available
-        if (HAS_CURIOS) {
+        if (hasCurios()) {
             nextSlot = restoreCurios(player, graveHandler, nextSlot, itemsToDropAtEnd);
         }
 
@@ -172,7 +175,7 @@ public class ModIntegration {
     }
 
     private static int storeCurios(Player player, ItemStackHandler graveHandler, int startSlot) {
-        if (HAS_CURIOS) {
+        if (hasCurios()) {
             return CuriosIntegration.storeCurios(player, graveHandler, startSlot);
         }
         // If curios is not available, just return the start slot
@@ -260,7 +263,7 @@ public class ModIntegration {
 
     private static int restoreCurios(Player player, ItemStackHandler graveHandler, int startSlot,
             List<ItemStack> itemsToDropAtEnd) {
-        if (HAS_CURIOS) {
+        if (hasCurios()) {
             return CuriosIntegration.restoreCurios(player, graveHandler, startSlot, itemsToDropAtEnd);
         }
         // If curios is not available, clear any remaining slots and drop items

@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Integration with Cosmetic Armor Reworked mod
+ * Integration with Cosmetic Armor Rewritten mod
  * Uses reflection to avoid hard dependencies
  */
 public class CosmeticArmorIntegration {
@@ -33,6 +33,13 @@ public class CosmeticArmorIntegration {
             initialized = false;
             Gravestones.LOGGER.warn("Failed to initialize Cosmetic Armor integration: {}", e.getMessage());
         }
+    }
+
+    /**
+     * Check if Cosmetic Armor integration is initialized
+     */
+    public static boolean isInitialized() {
+        return initialized;
     }
 
     /**
