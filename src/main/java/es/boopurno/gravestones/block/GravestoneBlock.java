@@ -67,10 +67,10 @@ public class GravestoneBlock extends HorizontalDirectionalBlock implements Entit
     public static VoxelShape rotateShape(Direction from, Direction to, VoxelShape shape) {
         VoxelShape[] buffer = new VoxelShape[] { shape, Shapes.empty() };
 
-        int times = (to.ordinal() - from.get2DDataValue() + 4) % 4;
+        int times = (to.get2DDataValue() - from.get2DDataValue() + 4) % 4;
         for (int i = 0; i < times; i++) {
             buffer[0].forAllBoxes((minX, minY, minZ, maxX, maxY, maxZ) -> buffer[1] = Shapes.or(buffer[1],
-                    Shapes.create(1 - maxZ, minY, minX, 1 - minZ, maxY, maxX)));
+                    Shapes.box(1 - maxZ, minY, minX, 1 - minZ, maxY, maxX)));
             buffer[0] = buffer[1];
             buffer[1] = Shapes.empty();
         }
@@ -82,9 +82,9 @@ public class GravestoneBlock extends HorizontalDirectionalBlock implements Entit
     public VoxelShape getShape(BlockState pState, BlockGetter pLevel, BlockPos pPos, CollisionContext pContext) {
         return switch (pState.getValue(FACING)) {
             case NORTH -> SHAPE;
-            case SOUTH -> rotateShape(Direction.SOUTH, Direction.NORTH, SHAPE);
-            case WEST -> rotateShape(Direction.EAST, Direction.NORTH, SHAPE);
-            case EAST -> rotateShape(Direction.WEST, Direction.NORTH, SHAPE);
+            case SOUTH -> rotateShape(Direction.NORTH, Direction.SOUTH, SHAPE);
+            case WEST -> rotateShape(Direction.NORTH, Direction.WEST, SHAPE);
+            case EAST -> rotateShape(Direction.NORTH, Direction.EAST, SHAPE);
             default -> SHAPE;
         };
     }
@@ -151,23 +151,155 @@ public class GravestoneBlock extends HorizontalDirectionalBlock implements Entit
             return;
         }
 
+        BlockPos validPos = findValidGravestonePosition(level, pos);
+        if (validPos == null) {
+            Gravestones.LOGGER.error("Could not find valid position for gravestone near {}. Dropping items instead.",
+                    pos);
+            player.getInventory().dropAll();
+            return;
+        }
+
         Direction placementDirection = player.getDirection().getOpposite();
-        FluidState fluidstate = level.getFluidState(pos);
+        FluidState fluidstate = level.getFluidState(validPos);
         BlockState graveState = this.defaultBlockState()
                 .setValue(FACING, placementDirection)
                 .setValue(WATERLOGGED, fluidstate.is(FluidTags.WATER) && fluidstate.getAmount() == 8);
 
-        level.setBlock(pos, graveState, 3);
-        BlockEntity blockEntity = level.getBlockEntity(pos);
+        level.setBlock(validPos, graveState, 3);
+        BlockEntity blockEntity = level.getBlockEntity(validPos);
         if (blockEntity instanceof GravestoneBlockEntity gravestoneBE) {
             gravestoneBE.setItemsOnDeath(player.getInventory());
             gravestoneBE.setOwnerName(ownerName);
-            Gravestones.LOGGER.debug("GravestoneBlockEntity populated for {} at {}", ownerName, pos);
+            Gravestones.LOGGER.debug("GravestoneBlockEntity populated for {} at {}", ownerName, validPos);
         } else {
             Gravestones.LOGGER.error(
                     "Failed to get GravestoneBlockEntity after placing gravestone at {}. Inventory NOT saved to grave.",
-                    pos);
+                    validPos);
         }
+    }
+
+    private BlockPos findValidGravestonePosition(Level level, BlockPos originalPos) {
+        BlockPos searchCenter = adjustSearchCenterForExtremeY(level, originalPos);
+
+        if (isValidGravestonePosition(level, searchCenter)) {
+            if (!searchCenter.equals(originalPos)) {
+                Gravestones.LOGGER.debug("Adjusted search center from {} to {} due to extreme Y position",
+                        originalPos, searchCenter);
+            }
+            return searchCenter;
+        }
+
+        final int maxSearchRadius = 16;
+
+        for (int radius = 1; radius <= maxSearchRadius; radius++) {
+            for (int x = -radius; x <= radius; x++) {
+                for (int z = -radius; z <= radius; z++) {
+                    if (Math.abs(x) != radius && Math.abs(z) != radius) {
+                        continue;
+                    }
+
+                    // Check both at same Y level and within a reasonable Y range
+                    for (int yOffset = -2; yOffset <= 5; yOffset++) {
+                        BlockPos testPos = searchCenter.offset(x, yOffset, z);
+                        if (isValidGravestonePosition(level, testPos)) {
+                            Gravestones.LOGGER.debug(
+                                    "Found valid gravestone position at {} (offset from original death at {})",
+                                    testPos, originalPos);
+                            return testPos;
+                        }
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private BlockPos adjustSearchCenterForExtremeY(Level level, BlockPos originalPos) {
+        int originalY = originalPos.getY();
+        int minY = level.getMinBuildHeight();
+        int maxY = level.getMaxBuildHeight();
+
+        if (originalY < minY + 5) {
+            BlockPos surfacePos = findNearestSurface(level, originalPos.getX(), originalPos.getZ());
+            if (surfacePos != null) {
+                Gravestones.LOGGER.debug("Death in void at Y={}, found surface at Y={}", originalY, surfacePos.getY());
+                return surfacePos;
+            }
+
+            return new BlockPos(originalPos.getX(), minY + 5, originalPos.getZ());
+        }
+
+        if (originalY > maxY - 5) {
+            for (int y = maxY - 5; y >= minY; y--) {
+                BlockPos testPos = new BlockPos(originalPos.getX(), y, originalPos.getZ());
+                if (level.getBlockState(testPos.below()).isSolidRender(level, testPos.below())) {
+                    return testPos;
+                }
+            }
+
+            return new BlockPos(originalPos.getX(), maxY - 5, originalPos.getZ());
+        }
+
+        return originalPos;
+    }
+
+    private BlockPos findNearestSurface(Level level, int x, int z) {
+        int minY = level.getMinBuildHeight();
+        int maxY = level.getMaxBuildHeight();
+
+        for (int radius = 0; radius <= 8; radius++) {
+            for (int xOffset = -radius; xOffset <= radius; xOffset++) {
+                for (int zOffset = -radius; zOffset <= radius; zOffset++) {
+                    if (radius > 0 && Math.abs(xOffset) != radius && Math.abs(zOffset) != radius) {
+                        continue;
+                    }
+
+                    int testX = x + xOffset;
+                    int testZ = z + zOffset;
+
+                    for (int y = maxY - 1; y >= minY; y--) {
+                        BlockPos testPos = new BlockPos(testX, y, testZ);
+                        BlockState blockState = level.getBlockState(testPos);
+
+                        if (blockState.isSolidRender(level, testPos)) {
+                            BlockPos gravePos = testPos.above();
+                            if (gravePos.getY() < maxY && isValidGravestonePosition(level, gravePos)) {
+                                return gravePos;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private boolean isValidGravestonePosition(Level level, BlockPos pos) {
+        if (!level.isInWorldBounds(pos)) {
+            return false;
+        }
+
+        BlockState blockState = level.getBlockState(pos);
+
+        if (!blockState.canBeReplaced()) {
+            return false;
+        }
+
+        BlockPos belowPos = pos.below();
+        BlockState belowState = level.getBlockState(belowPos);
+
+        if (!belowState.isSolidRender(level, belowPos) && !level.getFluidState(belowPos).is(FluidTags.WATER)) {
+            return false;
+        }
+
+        FluidState fluidState = level.getFluidState(pos);
+        if (!fluidState.isEmpty() && !fluidState.is(FluidTags.WATER)) {
+            return false;
+        }
+
+        return true;
     }
 
     @Override

@@ -60,8 +60,15 @@ public class GravestoneConfig {
                                 .defineInRange("maxDurabilityLossPercent", 30, 0, 100);
 
                 ITEM_BLACKLIST = BUILDER
-                                .comment("Items that should never be lost on death (use registry names like 'minecraft:diamond')")
-                                .defineList("itemBlacklist", Arrays.asList("minecraft:totem_of_undying", "curios:ring"),
+                                .comment("Items that should never be lost on death (use registry names like 'minecraft:diamond')",
+                                                "Supports wildcards:",
+                                                "  sophisticatedbackpacks:* - All items from sophisticatedbackpacks mod",
+                                                "  *:totem_of_undying - Totems from any mod",
+                                                "  minecraft:*_sword - All sword items from minecraft",
+                                                "  *:*_ring - All ring items from any mod")
+                                .defineList("itemBlacklist",
+                                                Arrays.asList("minecraft:totem_of_undying", "curios:ring",
+                                                                "sophisticatedbackpacks:*"),
                                                 obj -> obj instanceof String);
 
                 AFFECT_CURIOS_ITEMS = BUILDER
@@ -117,7 +124,8 @@ public class GravestoneConfig {
                 public int maxStackLossPercent = 50;
                 public int minDurabilityLossPercent = 10;
                 public int maxDurabilityLossPercent = 30;
-                public List<String> itemBlacklist = Arrays.asList("minecraft:totem_of_undying");
+                public List<String> itemBlacklist = Arrays.asList("minecraft:totem_of_undying",
+                                "sophisticatedbackpacks:*");
                 public boolean affectCuriosItems = false;
                 public boolean protectEnchantedItems = true;
                 public int enchantedItemProtection = 50;

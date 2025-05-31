@@ -1,6 +1,7 @@
 plugins {
     id 'eclipse'
     id 'idea'
+    id 'maven-publish'
     id 'net.minecraftforge.gradle' version '[6.0.16,6.2)'
     id 'org.parchmentmc.librarian.forgegradle' version '1.+'
 }
@@ -15,6 +16,8 @@ base {
 
 java {
     toolchain.languageVersion = JavaLanguageVersion.of(17)
+    
+    withSourcesJar()
 }
 
 minecraft {
@@ -198,8 +201,9 @@ tasks.named('processResources', ProcessResources).configure {
 
     inputs.properties replaceProperties
 
+    replaceProperties.put 'project', project
     filesMatching(['META-INF/mods.toml', 'pack.mcmeta']) {
-        expand replaceProperties + [project: project]
+        expand replaceProperties
     }
 }
 
@@ -221,4 +225,55 @@ tasks.named('jar', Jar).configure {
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8' // Use the UTF-8 charset for Java compilation
+}
+
+// Example configuration to allow publishing using the maven-publish plugin
+// This is the preferred method to reobfuscate your jar file
+jar.finalizedBy('reobfJar')
+
+// However if you are in a multi-project build, dev time needs unobfuscated jar files, so you can delay the obfuscation until publishing by doing:
+// publish.dependsOn('reobfJar')
+
+// Publishing configuration for GitHub releases and mod repositories
+publishing {
+    publications {
+        maven(MavenPublication) {
+            from components.java
+            
+            // Customize the artifact names
+            artifactId = mod_id
+            groupId = mod_group_id
+            version = mod_version
+            
+            pom {
+                name = mod_name
+                description = mod_description
+                url = 'https://github.com/n0es/gravestones/'
+                
+                licenses {
+                    license {
+                        name = mod_license
+                    }
+                }
+                
+                developers {
+                    developer {
+                        name = mod_authors
+                    }
+                }
+            }
+        }
+    }
+    
+    repositories {
+        // Uncomment and configure if you want to publish to a maven repository
+        // maven {
+        //     name = "GitHubPackages"
+        //     url = "https://maven.pkg.github.com/yourusername/gravestones-mod"
+        //     credentials {
+        //         username = project.findProperty("gpr.user") ?: System.getenv("USERNAME")
+        //         password = project.findProperty("gpr.key") ?: System.getenv("TOKEN")
+        //     }
+        // }
+    }
 }

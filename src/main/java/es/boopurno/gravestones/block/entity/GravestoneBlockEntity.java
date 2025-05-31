@@ -406,15 +406,71 @@ public class GravestoneBlockEntity extends BlockEntity implements MenuProvider {
     private boolean isItemBlacklisted(ItemStack itemStack) {
         ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(itemStack.getItem());
         String itemIdString = itemId.toString();
+        String namespace = itemId.getNamespace();
+        String path = itemId.getPath();
 
         List<? extends String> blacklist = GravestoneConfig.ITEM_BLACKLIST.get();
         for (String blacklistedItem : blacklist) {
-            if (itemIdString.equals(blacklistedItem)) {
+            if (isItemMatchingPattern(itemIdString, namespace, path, blacklistedItem)) {
+                Gravestones.LOGGER.debug("Item {} matched blacklist pattern: {}", itemIdString, blacklistedItem);
                 return true;
             }
         }
 
         return false;
+    }
+
+    private boolean isItemMatchingPattern(String fullItemId, String namespace, String path, String pattern) {
+        if (fullItemId.equals(pattern)) {
+            return true;
+        }
+
+        if (!pattern.contains("*")) {
+            return false;
+        }
+
+        String[] patternParts = pattern.split(":", 2);
+        if (patternParts.length != 2) {
+            return false;
+        }
+
+        String namespacePattern = patternParts[0];
+        String pathPattern = patternParts[1];
+
+        if (!namespacePattern.equals("*") && !matchesWildcard(namespace, namespacePattern)) {
+            return false;
+        }
+
+        if (!pathPattern.equals("*") && !matchesWildcard(path, pathPattern)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private boolean matchesWildcard(String text, String pattern) {
+        String regexPattern = pattern
+                .replace("\\", "\\\\")
+                .replace(".", "\\.")
+                .replace("+", "\\+")
+                .replace("?", "\\?")
+                .replace("^", "\\^")
+                .replace("$", "\\$")
+                .replace("|", "\\|")
+                .replace("{", "\\{")
+                .replace("}", "\\}")
+                .replace("[", "\\[")
+                .replace("]", "\\]")
+                .replace("(", "\\(")
+                .replace(")", "\\)")
+                .replace("*", ".*");
+
+        try {
+            return text.matches(regexPattern);
+        } catch (Exception e) {
+            Gravestones.LOGGER.warn("Invalid wildcard pattern '{}': {}", pattern, e.getMessage());
+            return text.equals(pattern);
+        }
     }
 
     private int[] applyCuriosItemLoss(Player player, Random random) {
